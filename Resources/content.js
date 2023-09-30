@@ -22,7 +22,7 @@ function selectSeason() {
  const dropdown = document.getElementById('season_filterDD');
  // if default season does not match desired season, select season option
  if (checkSeason() === `Season ${selectedSeason}`) {
-     console.log("correct season already selected.");
+	 console.log("correct season already selected.");
    return;
  }
 console.log("selecting season now.");
@@ -53,17 +53,56 @@ function delay(ms) {
  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function main() {
- await selectSeason();
- const delayTime = getRandomDelay(500, 1000);
- await delay(delayTime);
- triggerShowMore();
+async function selectSeasonAndExpand() {
+	selectSeason();
+	const delayTime = getRandomDelay(500, 1000);
+	await delay(delayTime);
+	triggerShowMore();
+}
+// Find the main play button element
+function clickPlayer() {
+	const player = document.querySelector('div.start-panel-click-overlay');
+	if (!player) {
+		console.log("Player element not found");
+		return;
+	}
+	player.click();
+  }
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-if (!window.location.href.includes('https://www.paramountplus.com/shows/survivor/')) {
-   console.log("No need to run any scripts here :)");
+async function delayAndClick() {
+  const delayTime = getRandomDelay(1200, 1500);
+  console.log(`Delaying ${delayTime}ms`);
+  await delay(delayTime);
+  await clickPlayer();
+}
+
+async function playButton() {
+  await delayAndClick();
+  await delayAndClick();
+  await delayAndClick();
+}
+function handleClick() {
+	// Find the duration element
+	console.log('u clicked');
+}
+  
+
+if (window.location.href.includes('https://www.paramountplus.com/shows/video/')) {
+  console.log('enjoy video :)');
+  await playButton();
+  console.log('did the clicking work?')
+	// document.addEventListener('click', () => console.log('u clicked'));
+}
+
+else if (window.location.href.includes('https://www.paramountplus.com/shows/survivor/')) {
+	console.log('Detected survivor! Setting season.');
+	selectSeasonAndExpand();
 }
 else {
-   console.log('Extension active on paramount plus!');
-   main();
+	console.log("No need to run any scripts here :)");
 }
+
