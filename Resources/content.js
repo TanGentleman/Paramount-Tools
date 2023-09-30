@@ -64,9 +64,10 @@ function clickPlayer() {
 	const player = document.querySelector('div.start-panel-click-overlay');
 	if (!player) {
 		console.log("Player element not found");
-		return;
+		return false;
 	}
 	player.click();
+	return true;
   }
 
 function delay(ms) {
@@ -77,13 +78,14 @@ async function delayAndClick() {
   const delayTime = getRandomDelay(1200, 1500);
   console.log(`Delaying ${delayTime}ms`);
   await delay(delayTime);
-  await clickPlayer();
+  const success = clickPlayer();
+  return success;
 }
 
 async function playButton() {
-  await delayAndClick();
-  await delayAndClick();
-  await delayAndClick();
+  const success1 = await delayAndClick();
+  const success2 = await delayAndClick();
+  const success3 = await delayAndClick();
 }
 function handleClick() {
 	// Find the duration element
@@ -93,8 +95,7 @@ function handleClick() {
 
 if (window.location.href.includes('https://www.paramountplus.com/shows/video/')) {
   console.log('enjoy video :)');
-  await playButton();
-  console.log('did the clicking work?')
+  playButton();
 	// document.addEventListener('click', () => console.log('u clicked'));
 }
 
