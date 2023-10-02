@@ -1,5 +1,5 @@
 // The season to select
-const selectedSeason = 7;
+const selectedSeason = 15;
 
 function checkSeason() {
  // returns season like -> "Season 7"
@@ -70,10 +70,6 @@ function clickPlayer() {
 	return true;
   }
 
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 async function delayAndClick() {
   const delayTime = getRandomDelay(1200, 1500);
   console.log(`Delaying ${delayTime}ms`);
@@ -83,25 +79,135 @@ async function delayAndClick() {
 }
 
 async function playButton() {
-  const success1 = await delayAndClick();
-  const success2 = await delayAndClick();
-  const success3 = await delayAndClick();
+  let success = false;
+  for (let i = 0; i < 3; i++) {
+    const delayTime = getRandomDelay(1200, 1500);
+    console.log(`Delaying ${delayTime}ms`);
+    await delay(delayTime);
+    success = clickPlayer();
+    if (!success) {
+      break;
+    }
+  }
+  return success;
 }
-function handleClick() {
-	// Find the duration element
-	console.log('u clicked');
+
+function triggerShowMore() {
+    const showMoreButton = document.querySelector('.button.secondary.focusable.load-more-button.js-load-more');
+
+    if (showMoreButton) {
+        showMoreButton.click();
+    } else {
+        console.log('Show More button not found');
+    }
 }
-  
+
+
+// Function to fetch subTitle text
+function fetchSubTitle() {
+    const subTitleElement = document.querySelector('.movie__sub-metadata .subTitle');
+    if (subTitleElement) {
+        return subTitleElement.textContent;
+    } else {
+        console.log('subTitle not found');
+        return null;
+    }
+}
+
+function clickNextEpisode(episode) {
+    const nextEpisodeNumber = episode + 1;
+    const nextEpisode = `Episode ${nextEpisodeNumber}`;
+    console.log(nextEpisode);
+    const nextEpisodeElement = document.querySelector(`abbr[title="${nextEpisode}"]`);
+    if (nextEpisodeElement) {
+        // Find the parent a element and click it
+        const parentLink = nextEpisodeElement.closest('a');
+        if (parentLink) {
+            parentLink.click();
+        } else {
+            console.log('Parent link not found');
+        }
+    } 
+    else {
+        console.log('Next episode link not found');
+    }
+}
+
+// Function to find and click the next episode link
+function playNextEpisode() {
+    const subTitle = fetchSubTitle();
+    if (subTitle) {
+        const match = subTitle.match(/(\d+)/g);
+        const [season, episode] = match.map(Number);
+        console.log(season, episode)
+        if (episode >= 10) {
+            triggerShowMore();
+            const delay = getRandomDelay(1000, 1500);
+            setTimeout(() => {
+                clickNextEpisode(episode);
+            }, delay);
+        } else {
+            clickNextEpisode(episode);
+        }
+    } else {
+        console.log('SubTitle not found');
+    }
+}
+function addButton () {
+    const newButton = document.createElement('button');
+    newButton.textContent = 'Play next episode';
+    newButton.addEventListener('click', playNextEpisode);
+    
+    // Style the button
+    newButton.style.position = 'fixed';
+    newButton.style.top = '20px';
+    newButton.style.right = '20px';
+    newButton.style.zIndex = '999';
+    
+    // Append the next episode button to your HTML
+    const menuContainer = document.querySelector('.top-menu-hint.menu-link-container');
+    if (menuContainer) {
+      const parentContainer = menuContainer.parentNode;
+      parentContainer.insertBefore(newButton, menuContainer.nextSibling);
+      console.log('Next episode button added');
+    } 
+    else {
+      console.log('Menu container not found');
+    }
+}
+async function onVideo() {
+	console.log('enjoy video :)');
+	const delayTime = getRandomDelay(1200, 1500);
+	console.log(`Delaying ${delayTime}ms`);
+	await delay(delayTime);
+	await playButton();
+	// Create a new button element
+	addButton();
+}
+
+function isUserSignedIn() {
+  const button = document.querySelector('.current-userprofile-anchor');
+  if (button !== null) {
+    return true;
+  }
+  return false;
+}
+
 
 if (window.location.href.includes('https://www.paramountplus.com/shows/video/')) {
-  console.log('enjoy video :)');
-  playButton();
+  onVideo()
 	// document.addEventListener('click', () => console.log('u clicked'));
 }
 
 else if (window.location.href.includes('https://www.paramountplus.com/shows/survivor/')) {
-	console.log('Detected survivor! Setting season.');
-	selectSeasonAndExpand();
+  // should check if signed in, then load config
+  if (isUserSignedIn()) {
+    console.log(`User is signed in! Setting survivor season ${selectedSeason}.`);
+    selectSeasonAndExpand();
+  } 
+  else {
+    console.log('User is not signed in');
+  }
 }
 else {
 	console.log("No need to run any scripts here :)");
