@@ -1,15 +1,16 @@
 // The season to select
-const selectedSeason = 15;
+const selectedSeason = 9;
 
 function checkSeason() {
  // returns season like -> "Season 7"
  const button = document.querySelector('.filter.js-filter');
  if (!button) {
-   console.error('Season button not found');
+   console.log('Season button not found');
    return null;
  }
  try {
-   const buttonSeason = button.textContent.trim(); // Get the text content of the button and remove any leading/trailing whitespace
+   const buttonSeason = button.textContent.trim();
+   console.log(`Current season: ${buttonSeason}`)
    return buttonSeason;
  }
  catch (e) {
@@ -70,23 +71,18 @@ function clickPlayer() {
 	return true;
   }
 
-async function delayAndClick() {
-  const delayTime = getRandomDelay(1200, 1500);
-  console.log(`Delaying ${delayTime}ms`);
-  await delay(delayTime);
-  const success = clickPlayer();
-  return success;
-}
-
 async function playButton() {
   let success = false;
-  for (let i = 0; i < 3; i++) {
-    const delayTime = getRandomDelay(1200, 1500);
-    console.log(`Delaying ${delayTime}ms`);
-    await delay(delayTime);
+  for (let i = 0; i < 6; i++) {
     success = clickPlayer();
-    if (!success) {
-      break;
+    const delayTime = getRandomDelay(500, 700);
+    if (success) {
+        await delay(delayTime);
+        console.log(`Delaying ${delayTime}ms`);
+    }
+    else {
+        console.log('Play button not found');
+        // break;
     }
   }
   return success;
@@ -153,36 +149,50 @@ function playNextEpisode() {
         console.log('SubTitle not found');
     }
 }
-function addButton () {
-    const newButton = document.createElement('button');
-    newButton.textContent = 'Play next episode';
-    newButton.addEventListener('click', playNextEpisode);
-    
-    // Style the button
-    newButton.style.position = 'fixed';
-    newButton.style.top = '20px';
-    newButton.style.right = '20px';
-    newButton.style.zIndex = '999';
-    
-    // Append the next episode button to your HTML
-    const menuContainer = document.querySelector('.top-menu-hint.menu-link-container');
-    if (menuContainer) {
-      const parentContainer = menuContainer.parentNode;
-      parentContainer.insertBefore(newButton, menuContainer.nextSibling);
-      console.log('Next episode button added');
-    } 
-    else {
-      console.log('Menu container not found');
+
+async function addNextButton () {
+    const button = document.createElement('button');
+    button.classList.add('controls-bottom-btn');
+    button.innerHTML = '<span style="font-weight: bold; color: white;"> Next</span>';
+    button.addEventListener('click', playNextEpisode);
+    const parentElement = document.querySelector('.controls-bottom-right');
+    const volumeButton = parentElement.querySelector('.controls-volume-slider');
+    parentElement.insertBefore(button, volumeButton);
+}
+
+async function checkPlayButtonExistenceWithRetries(maxRetries) {
+    let retries = 0;
+    while (retries < maxRetries) {
+        const button = document.querySelector('.top-menu-btn.btn-audio-cc');
+        if (button) {
+            return true;
+        }
+        retries++;
+        const delayTime = getRandomDelay(400, 600);
+        await delay(delayTime);
     }
+    console.log('Element not found after maximum retries.');
+    return false;
 }
 async function onVideo() {
-	console.log('enjoy video :)');
-	const delayTime = getRandomDelay(1200, 1500);
-	console.log(`Delaying ${delayTime}ms`);
-	await delay(delayTime);
+    await checkPlayButtonExistenceWithRetries(6);
+    await delay(1000)
+    // Try to make sure player is fully loaded before this stuff?
+	console.log('enjoy video! :)');
+	// const delayTime = getRandomDelay(1500, 2000);
+	// console.log(`Delaying ${delayTime}ms`);
+	// await delay(delayTime);
 	await playButton();
 	// Create a new button element
-	addButton();
+	await addNextButton();
+  	await createPlaybackSpeedToggler();
+    console.log('Starting sub button')
+    const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
+    const clonedButton = subtitlesButton.cloneNode(true);
+    clonedButton.addEventListener('click', toggleSubtitles);
+    const parent = document.querySelector('.top-menu-container');
+    parent.insertBefore(clonedButton, subtitlesButton.nextSibling);
+    subtitlesButton.style.display = 'none';
 }
 
 function isUserSignedIn() {
@@ -192,11 +202,57 @@ function isUserSignedIn() {
   }
   return false;
 }
+async function createPlaybackSpeedToggler() {
+  const videoPlayer = document.querySelector('video');
+  const playbackSpeeds = [1, 1.25, 1.5];
+  let currentSpeedIndex = 0;
 
+  function togglePlaybackSpeed() {
+	// set 
+    currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length;
+    videoPlayer.playbackRate = playbackSpeeds[currentSpeedIndex];
+    console.log(`Playback speed changed to ${playbackSpeeds[currentSpeedIndex]}`);
+  }
+
+  const button = document.createElement('button');
+  button.classList.add('controls-bottom-btn');
+  button.innerHTML = '<span style="font-weight: bold; color: white;"> Speed</span>';
+  button.addEventListener('click', togglePlaybackSpeed);
+
+  const parentElement = document.querySelector('.controls-bottom-center-wrapper');
+  const fastForwardButton = parentElement.querySelector('.btn-fast-forward');
+  parentElement.insertBefore(button, fastForwardButton.nextSibling);
+}
+
+
+async function toggleSubtitles() {
+    const closeButton = document.querySelector('.audio-cc-panel-btn-close');
+    const offButton = document.getElementById('off-btn');
+    const englishButton = document.getElementById('english-btn');
+
+    const offSelected = offButton.getAttribute('aria-selected') === 'true';
+    const englishSelected = englishButton.getAttribute('aria-selected') === 'true';
+    // check if they're the same
+    if (offSelected === true) {
+        console.log('Subtitles are off, toggling to English');
+        englishButton.click();
+    }
+    else if (englishSelected === true) {
+        console.log('Subtitles are English, toggling to Off');
+        offButton.click();
+    }
+    else {
+        console.log('Subtitles are neither Off or English, something is wrong');
+    }
+    const delayTime = getRandomDelay(300, 500);
+    await delay(delayTime);
+
+    // console.log('Subtitles toggled to ' + (englishSelected ? 'English' : 'Off'));
+    closeButton.click();
+};
 
 if (window.location.href.includes('https://www.paramountplus.com/shows/video/')) {
-  onVideo()
-	// document.addEventListener('click', () => console.log('u clicked'));
+  onVideo();
 }
 
 else if (window.location.href.includes('https://www.paramountplus.com/shows/survivor/')) {
@@ -206,7 +262,7 @@ else if (window.location.href.includes('https://www.paramountplus.com/shows/surv
     selectSeasonAndExpand();
   } 
   else {
-    console.log('User is not signed in');
+    console.log('User is not signed in.');
   }
 }
 else {
