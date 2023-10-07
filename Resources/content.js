@@ -77,25 +77,16 @@ async function playButton() {
     success = clickPlayer();
     const delayTime = getRandomDelay(500, 700);
     if (success) {
-        await delay(delayTime);
+        await delay(delayTime/1.3);
         console.log(`Delaying ${delayTime}ms`);
     }
     else {
         console.log('Play button not found');
+        await delay(delayTime);
         // break;
     }
   }
   return success;
-}
-
-function triggerShowMore() {
-    const showMoreButton = document.querySelector('.button.secondary.focusable.load-more-button.js-load-more');
-
-    if (showMoreButton) {
-        showMoreButton.click();
-    } else {
-        console.log('Show More button not found');
-    }
 }
 
 
@@ -163,7 +154,7 @@ async function addNextButton () {
 async function checkPlayButtonExistenceWithRetries(maxRetries) {
     let retries = 0;
     while (retries < maxRetries) {
-        const button = document.querySelector('.top-menu-btn.btn-audio-cc');
+        const button = document.querySelector('.start-panel-big-play-button');
         if (button) {
             return true;
         }
@@ -174,25 +165,60 @@ async function checkPlayButtonExistenceWithRetries(maxRetries) {
     console.log('Element not found after maximum retries.');
     return false;
 }
+async function subtitleReplacer() {
+    const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
+    const clonedButton = subtitlesButton.cloneNode(true);
+    if (subtitlesButton && clonedButton) {
+        console.log('yay!');
+    }
+    try {
+        clonedButton.addEventListener('click', toggleSubtitles);
+        const parent = document.querySelector('.top-menu-container');
+        parent.insertBefore(clonedButton, subtitlesButton.nextSibling);
+        subtitlesButton.style.display = 'none';
+        console.log('Subtitles button replaced');
+    }
+    catch (e) {
+        console.log('Error replacing subtitles button:' + e);
+    }
+}
+
+function handleClick() {
+    // Handle the click event here
+    console.log('Document clicked!');
+    
+    // Remove the event listener after it has been triggered
+    document.removeEventListener('click', handleClick);
+    subtitleReplacer();
+  }
+  
+
 async function onVideo() {
-    await checkPlayButtonExistenceWithRetries(6);
-    await delay(1000)
+    const initializedSuccess = checkPlayButtonExistenceWithRetries(6);
+    if (!initializedSuccess) {
+        console.log('Play button never initialized.');
+        return;
+    }
     // Try to make sure player is fully loaded before this stuff?
 	console.log('enjoy video! :)');
-	// const delayTime = getRandomDelay(1500, 2000);
-	// console.log(`Delaying ${delayTime}ms`);
-	// await delay(delayTime);
+	const delayTime = getRandomDelay(3000, 3500);
+	console.log(`Delaying ${delayTime}ms`);
+	await delay(delayTime);
 	await playButton();
+    // check if the play button wrapper still exists
+    const videoStarted = document.querySelector('.start-panel-click-overlay');
+    if (videoStarted !== null) {
+        console.log('Video did not start, exiting.');
+        // maybe make a backup click event with the rest of the functions here?
+        return;
+    }
 	// Create a new button element
 	await addNextButton();
   	await createPlaybackSpeedToggler();
     console.log('Starting sub button')
-    const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
-    const clonedButton = subtitlesButton.cloneNode(true);
-    clonedButton.addEventListener('click', toggleSubtitles);
-    const parent = document.querySelector('.top-menu-container');
-    parent.insertBefore(clonedButton, subtitlesButton.nextSibling);
-    subtitlesButton.style.display = 'none';
+    // await delay(2000);
+    document.addEventListener('click', handleClick);
+    // await subtitleReplacer();
 }
 
 function isUserSignedIn() {
@@ -226,6 +252,21 @@ async function createPlaybackSpeedToggler() {
 
 
 async function toggleSubtitles() {
+    // check if in subtitle panel, if not, click it
+    const menuPanel = document.querySelector('.audio-cc-panel-menu-section');
+
+    if (menuPanel && menuPanel.classList.contains('show')) {
+    // The menu panel is active
+        console.log('Menu panel is active');
+    } 
+    else {
+    // The menu panel is not active
+        console.log('Menu panel is not active');
+        const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
+        subtitlesButton.click();
+        await delay(300);
+    }
+
     const closeButton = document.querySelector('.audio-cc-panel-btn-close');
     const offButton = document.getElementById('off-btn');
     const englishButton = document.getElementById('english-btn');
