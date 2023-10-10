@@ -1,5 +1,5 @@
 // The season to select
-const selectedSeason = 9;
+const selectedSeason = 12;
 
 function checkSeason() {
  // returns season like -> "Season 7"
@@ -72,13 +72,25 @@ function clickPlayer() {
   }
 
 async function playButton() {
+	// this function needs a way to detect of the video has been fully started
+  let videoStarted = document.querySelector('.start-panel-click-overlay');
+  if (videoStarted === null) {
+        console.log('Video started earlier than expected.');
+        return false;
+    }
   let success = false;
   for (let i = 0; i < 6; i++) {
+    // videoStarted = document.querySelector('.panel-manager');
+	// if (videoStarted && videoStarted.classList.contains('remove')) {
+    // if (videoStarted === null) {
+    //     console.log('Video started!');
+    //     return true;
+    // }
     success = clickPlayer();
     const delayTime = getRandomDelay(500, 700);
     if (success) {
-        await delay(delayTime/1.3);
         console.log(`Delaying ${delayTime}ms`);
+        await delay(delayTime);
     }
     else {
         console.log('Play button not found');
@@ -144,7 +156,7 @@ function playNextEpisode() {
 async function addNextButton () {
     const button = document.createElement('button');
     button.classList.add('controls-bottom-btn');
-    button.innerHTML = '<span style="font-weight: bold; color: white;"> Next</span>';
+    button.innerHTML = '<span style="font-weight: bold; color: white;"> Next    |</span>';
     button.addEventListener('click', playNextEpisode);
     const parentElement = document.querySelector('.controls-bottom-right');
     const volumeButton = parentElement.querySelector('.controls-volume-slider');
@@ -158,9 +170,11 @@ async function checkPlayButtonExistenceWithRetries(maxRetries) {
         if (button) {
             return true;
         }
-        retries++;
-        const delayTime = getRandomDelay(400, 600);
-        await delay(delayTime);
+		else {
+			retries++;
+			const delayTime = getRandomDelay(400, 600);
+			await delay(delayTime);
+		}
     }
     console.log('Element not found after maximum retries.');
     return false;
@@ -189,19 +203,20 @@ function handleClick() {
     
     // Remove the event listener after it has been triggered
     document.removeEventListener('click', handleClick);
-    subtitleReplacer();
+    onVideo();
   }
   
 
 async function onVideo() {
-    const initializedSuccess = checkPlayButtonExistenceWithRetries(6);
-    if (!initializedSuccess) {
+    const initializedSuccess = await checkPlayButtonExistenceWithRetries(6);
+	console.log('initializedSuccess: ' + initializedSuccess);
+    if (initializedSuccess === false) {
         console.log('Play button never initialized.');
         return;
     }
     // Try to make sure player is fully loaded before this stuff?
 	console.log('enjoy video! :)');
-	const delayTime = getRandomDelay(3000, 3500);
+	const delayTime = getRandomDelay(2000, 3000);
 	console.log(`Delaying ${delayTime}ms`);
 	await delay(delayTime);
 	await playButton();
@@ -210,15 +225,16 @@ async function onVideo() {
     if (videoStarted !== null) {
         console.log('Video did not start, exiting.');
         // maybe make a backup click event with the rest of the functions here?
+		document.addEventListener('click', handleClick);
         return;
     }
 	// Create a new button element
 	await addNextButton();
   	await createPlaybackSpeedToggler();
     console.log('Starting sub button')
-    // await delay(2000);
-    document.addEventListener('click', handleClick);
-    // await subtitleReplacer();
+    await delay(2000);
+    // document.addEventListener('click', handleClick);
+    subtitleReplacer();
 }
 
 function isUserSignedIn() {
@@ -242,7 +258,7 @@ async function createPlaybackSpeedToggler() {
 
   const button = document.createElement('button');
   button.classList.add('controls-bottom-btn');
-  button.innerHTML = '<span style="font-weight: bold; color: white;"> Speed</span>';
+  button.innerHTML = '<span style="font-weight: bold; color: white;">|   Speed</span>';
   button.addEventListener('click', togglePlaybackSpeed);
 
   const parentElement = document.querySelector('.controls-bottom-center-wrapper');
