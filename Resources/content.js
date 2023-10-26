@@ -1,5 +1,5 @@
 // The season to select
-const selectedSeason = 12;
+const selectedSeason = 16;
 
 function checkSeason() {
  // returns season like -> "Season 7"
@@ -61,15 +61,22 @@ async function selectSeasonAndExpand() {
 	triggerShowMore();
 }
 // Find the main play button element
-function clickPlayer() {
+async function clickPlayer(count) {
+    if (count === 3) {
+        console.log("I think it's done! Stop checking.");
+        return null;
+    }
 	const player = document.querySelector('div.start-panel-click-overlay');
 	if (!player) {
 		console.log("Player element not found");
 		return false;
 	}
-	player.click();
-	return true;
-  }
+    else {
+        player.click();
+        console.log('Clicked player')
+        return true;
+    }
+}
 
 async function playButton() {
 	// this function needs a way to detect of the video has been fully started
@@ -78,24 +85,24 @@ async function playButton() {
         console.log('Video started earlier than expected.');
         return false;
     }
-  let success = false;
-  for (let i = 0; i < 6; i++) {
-    // videoStarted = document.querySelector('.panel-manager');
-	// if (videoStarted && videoStarted.classList.contains('remove')) {
-    // if (videoStarted === null) {
-    //     console.log('Video started!');
-    //     return true;
-    // }
-    success = clickPlayer();
+  let success;
+  let count = 0
+  for (let i = 0; i < 8; i++) {
+    success = await clickPlayer(count);
+    if (success === null) {
+        console.log('Video started!');
+        success = true;
+        break;
+    }
     const delayTime = getRandomDelay(500, 700);
-    if (success) {
+    if (success === true) {
         console.log(`Delaying ${delayTime}ms`);
+        count++;
         await delay(delayTime);
     }
     else {
-        console.log('Play button not found');
+        console.log('Play button missing, trying delay again.');
         await delay(delayTime);
-        // break;
     }
   }
   return success;
@@ -153,6 +160,9 @@ function playNextEpisode() {
     }
 }
 
+// PREREQ ELEMENTS:
+// const parentElement = document.querySelector('.controls-bottom-right');
+// const volumeButton = parentElement.querySelector('.controls-volume-slider');
 async function addNextButton () {
     const button = document.createElement('button');
     button.classList.add('controls-bottom-btn');
@@ -179,6 +189,10 @@ async function checkPlayButtonExistenceWithRetries(maxRetries) {
     console.log('Element not found after maximum retries.');
     return false;
 }
+
+// PREREQ ELEMENTS:
+// const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
+// const parent = document.querySelector('.top-menu-container');
 async function subtitleReplacer() {
     const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
     const clonedButton = subtitlesButton.cloneNode(true);
@@ -200,23 +214,17 @@ async function subtitleReplacer() {
 function handleClick() {
     // Handle the click event here
     console.log('Document clicked!');
-    
+
     // Remove the event listener after it has been triggered
     document.removeEventListener('click', handleClick);
-    onVideo();
+    startVideo();
   }
   
 
-async function onVideo() {
-    const initializedSuccess = await checkPlayButtonExistenceWithRetries(6);
-	console.log('initializedSuccess: ' + initializedSuccess);
-    if (initializedSuccess === false) {
-        console.log('Play button never initialized.');
-        return;
-    }
+async function startVideo() {
     // Try to make sure player is fully loaded before this stuff?
 	console.log('enjoy video! :)');
-	const delayTime = getRandomDelay(2000, 3000);
+	const delayTime = getRandomDelay(1500, 2000);
 	console.log(`Delaying ${delayTime}ms`);
 	await delay(delayTime);
 	await playButton();
@@ -228,12 +236,14 @@ async function onVideo() {
 		document.addEventListener('click', handleClick);
         return;
     }
+	// check if all prerequisite elements exist
+
 	// Create a new button element
 	await addNextButton();
   	await createPlaybackSpeedToggler();
     console.log('Starting sub button')
-    await delay(2000);
-    // document.addEventListener('click', handleClick);
+	const delayTime2 = getRandomDelay(5000, 6200);
+    await delay(delayTime2);
     subtitleReplacer();
 }
 
@@ -248,25 +258,37 @@ async function createPlaybackSpeedToggler() {
   const videoPlayer = document.querySelector('video');
   const playbackSpeeds = [1, 1.25, 1.5];
   let currentSpeedIndex = 0;
-
-  function togglePlaybackSpeed() {
-	// set 
-    currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length;
-    videoPlayer.playbackRate = playbackSpeeds[currentSpeedIndex];
-    console.log(`Playback speed changed to ${playbackSpeeds[currentSpeedIndex]}`);
-  }
-
   const button = document.createElement('button');
   button.classList.add('controls-bottom-btn');
-  button.innerHTML = '<span style="font-weight: bold; color: white;">|   Speed</span>';
+  const buttonText = " | Speed";
+  button.innerHTML = `<span style="font-weight: bold; color: white;">${buttonText}</span>`;
+  function togglePlaybackSpeed() {
+    currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length;
+	const currSpeed = playbackSpeeds[currentSpeedIndex];
+    videoPlayer.playbackRate = currSpeed;
+    console.log(`Playback speed changed to ${currSpeed}x`);
+	let tempButtonText = "";
+	if (currSpeed !== 1) {
+		tempButtonText = ` | Speed: ${currSpeed}x`;
+	}
+	else {
+		tempButtonText = " | Speed";
+	}
+	// Modify the innerHTML to include an inline style for positioning
+	button.innerHTML = `<span style="font-weight: bold; color: white;">${tempButtonText}</span>`;
+  }
   button.addEventListener('click', togglePlaybackSpeed);
-
   const parentElement = document.querySelector('.controls-bottom-center-wrapper');
   const fastForwardButton = parentElement.querySelector('.btn-fast-forward');
   parentElement.insertBefore(button, fastForwardButton.nextSibling);
 }
 
-
+// PREREQ ELEMENTS:
+// const menuPanel = document.querySelector('.audio-cc-panel-menu-section');
+// const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
+// const closeButton = document.querySelector('.audio-cc-panel-btn-close');
+// const offButton = document.getElementById('off-btn');
+// const englishButton = document.getElementById('english-btn');
 async function toggleSubtitles() {
     // check if in subtitle panel, if not, click it
     const menuPanel = document.querySelector('.audio-cc-panel-menu-section');
@@ -285,8 +307,12 @@ async function toggleSubtitles() {
 
     const closeButton = document.querySelector('.audio-cc-panel-btn-close');
     const offButton = document.getElementById('off-btn');
-    const englishButton = document.getElementById('english-btn');
-
+	
+    let englishButton = document.getElementById('english-btn');
+	if (englishButton === null) {
+		englishButton = document.getElementById('english-(u.s.)-btn');
+	}
+	
     const offSelected = offButton.getAttribute('aria-selected') === 'true';
     const englishSelected = englishButton.getAttribute('aria-selected') === 'true';
     // check if they're the same
@@ -306,10 +332,22 @@ async function toggleSubtitles() {
 
     // console.log('Subtitles toggled to ' + (englishSelected ? 'English' : 'Off'));
     closeButton.click();
-};
+}
+
+async function on_video_page() {
+    const foundVid = await checkPlayButtonExistenceWithRetries(6);
+    if (foundVid) {
+        startVideo();
+    }
+    else {
+        console.log('Video not found');
+        document.addEventListener('click', handleClick);
+        return;
+    }
+}
 
 if (window.location.href.includes('https://www.paramountplus.com/shows/video/')) {
-  onVideo();
+	on_video_page();
 }
 
 else if (window.location.href.includes('https://www.paramountplus.com/shows/survivor/')) {
@@ -326,3 +364,10 @@ else {
 	console.log("No need to run any scripts here :)");
 }
 
+
+
+// ideas to reorganize:
+// Once the play button has been clicked 3 times, check for the existence of all elements.
+// Use a while loop to check for the existence of all elements.
+// If all elements exist, run the rest of the script.
+// Do not allow running script duplicate times!
