@@ -1,5 +1,12 @@
-// The season to select
-const selectedSeason = 16;
+// Adjust these for your preference!
+const CURRENT_SHOW = 'buddy-games'; // Must be the exact show name from the URL
+const CURRENT_SEASON = 1;
+
+// CONFIGURATION CONSTANTS
+const BASE_URL = 'https://www.paramountplus.com';
+const DEFAULT_SHOW = 'survivor';
+const VALID_SHOW_URL = `${BASE_URL}/shows/${CURRENT_SHOW?.length < 50 ? CURRENT_SHOW : DEFAULT_SHOW}`;
+const VALID_VIDEO_URL = `${BASE_URL}/shows/video`;
 
 function checkSeason() {
  // returns season like -> "Season 7"
@@ -22,6 +29,10 @@ function checkSeason() {
 function selectSeason() {
  const dropdown = document.getElementById('season_filterDD');
  // if default season does not match desired season, select season option
+ const default_season = '1'
+ // choose CURRENT_SEASON if that is a valid int > 0, otherwise choose 1
+ const selectedSeason = CURRENT_SEASON > 0 ? CURRENT_SEASON : default_season;
+
  if (checkSeason() === `Season ${selectedSeason}`) {
 	 console.log("correct season already selected.");
    return;
@@ -61,49 +72,49 @@ async function selectSeasonAndExpand() {
 	triggerShowMore();
 }
 // Find the main play button element
-async function clickPlayer(count) {
-	if (count === 3) {
-		console.log("I think it's done! Stop checking.");
-		return null;
-	}
+async function clickPlayThrice(count) {
+    if (count === 3) {
+        console.log("I think it's done! Stop checking.");
+        return null;
+    }
 	const player = document.querySelector('div.start-panel-click-overlay');
 	if (!player) {
 		console.log("Player element not found");
 		return false;
 	}
-	else {
-		player.click();
-		console.log('Clicked player')
-		return true;
-	}
+    else {
+        player.click();
+        console.log('Clicked player')
+        return true;
+    }
 }
 
 async function playButton() {
 	// this function needs a way to detect of the video has been fully started
   let videoStarted = document.querySelector('.start-panel-click-overlay');
   if (videoStarted === null) {
-		console.log('Video started earlier than expected.');
-		return false;
-	}
+        console.log('Video started earlier than expected.');
+        return false;
+    }
   let success;
   let count = 0
   for (let i = 0; i < 8; i++) {
-	success = await clickPlayer(count);
-	if (success === null) {
-		console.log('Video started!');
-		success = true;
-		break;
-	}
-	const delayTime = getRandomDelay(500, 700);
-	if (success === true) {
-		console.log(`Delaying ${delayTime}ms`);
-		count++;
-		await delay(delayTime);
-	}
-	else {
-		console.log('Play button missing, trying delay again.');
-		await delay(delayTime);
-	}
+    success = await clickPlayThrice(count);
+    if (success === null) {
+        console.log('Video started!');
+        success = true;
+        break;
+    }
+    const delayTime = getRandomDelay(500, 700);
+    if (success === true) {
+        console.log(`Delaying ${delayTime}ms`);
+        count++;
+        await delay(delayTime);
+    }
+    else {
+        console.log('Play button missing, trying delay again.');
+        await delay(delayTime);
+    }
   }
   return success;
 }
@@ -111,146 +122,146 @@ async function playButton() {
 
 // Function to fetch subTitle text
 function fetchSubTitle() {
-	const subTitleElement = document.querySelector('.movie__sub-metadata .subTitle');
-	if (subTitleElement) {
-		return subTitleElement.textContent;
-	} else {
-		console.log('subTitle not found');
-		return null;
-	}
+    const subTitleElement = document.querySelector('.movie__sub-metadata .subTitle');
+    if (subTitleElement) {
+        return subTitleElement.textContent;
+    } else {
+        console.log('subTitle not found');
+        return null;
+    }
 }
 
 function clickNextEpisode(episode) {
-	const nextEpisodeNumber = episode + 1;
-	const nextEpisode = `Episode ${nextEpisodeNumber}`;
-	console.log(nextEpisode);
-	const nextEpisodeElement = document.querySelector(`abbr[title="${nextEpisode}"]`);
-	if (nextEpisodeElement) {
-		// Find the parent a element and click it
-		const parentLink = nextEpisodeElement.closest('a');
-		if (parentLink) {
-			parentLink.click();
-		} else {
-			console.log('Parent link not found');
-		}
-	}
-	else {
-		console.log('Next episode link not found');
-	}
+    const nextEpisodeNumber = episode + 1;
+    const nextEpisode = `Episode ${nextEpisodeNumber}`;
+    console.log(nextEpisode);
+    const nextEpisodeElement = document.querySelector(`abbr[title="${nextEpisode}"]`);
+    if (nextEpisodeElement) {
+        // Find the parent a element and click it
+        const parentLink = nextEpisodeElement.closest('a');
+        if (parentLink) {
+            parentLink.click();
+        } else {
+            console.log('Parent link not found');
+        }
+    } 
+    else {
+        console.log('Next episode link not found');
+    }
 }
 
 // Function to find and click the next episode link
 function playNextEpisode() {
-	const subTitle = fetchSubTitle();
-	if (subTitle) {
-		const match = subTitle.match(/(\d+)/g);
-		const [season, episode] = match.map(Number);
-		console.log(season, episode)
-		if (episode >= 10) {
-			triggerShowMore();
-			const delay = getRandomDelay(1000, 1500);
-			setTimeout(() => {
-				clickNextEpisode(episode);
-			}, delay);
-		} else {
-			clickNextEpisode(episode);
-		}
-	} else {
-		console.log('SubTitle not found');
-	}
+    const subTitle = fetchSubTitle();
+    if (subTitle) {
+        const match = subTitle.match(/(\d+)/g);
+        const [season, episode] = match.map(Number);
+        console.log(season, episode)
+        if (episode >= 10) {
+            triggerShowMore();
+            const delay = getRandomDelay(1000, 1500);
+            setTimeout(() => {
+                clickNextEpisode(episode);
+            }, delay);
+        } else {
+            clickNextEpisode(episode);
+        }
+    } else {
+        console.log('SubTitle not found');
+    }
 }
 
 // PREREQ ELEMENTS:
 // const parentElement = document.querySelector('.controls-bottom-right');
 // const volumeButton = parentElement.querySelector('.controls-volume-slider');
 async function addNextButton () {
-	const button = document.createElement('button');
-	button.classList.add('controls-bottom-btn');
-	button.innerHTML = '<span style="font-weight: bold; color: white;"> Next    |</span>';
-	button.addEventListener('click', playNextEpisode);
-	const parentElement = document.querySelector('.controls-bottom-right');
-	const volumeButton = parentElement.querySelector('.controls-volume-slider');
-	parentElement.insertBefore(button, volumeButton);
+    const button = document.createElement('button');
+    button.classList.add('controls-bottom-btn');
+    button.innerHTML = '<span style="font-weight: bold; color: white;"> Next    |</span>';
+    button.addEventListener('click', playNextEpisode);
+    const parentElement = document.querySelector('.controls-bottom-right');
+    const volumeButton = parentElement.querySelector('.controls-volume-slider');
+    parentElement.insertBefore(button, volumeButton);
 }
 
 async function checkPlayButtonExistenceWithRetries(maxRetries) {
-	let retries = 0;
-	while (retries < maxRetries) {
-		const button = document.querySelector('.start-panel-big-play-button');
-		if (button) {
-			return true;
-		}
+    let retries = 0;
+    while (retries < maxRetries) {
+        const button = document.querySelector('.start-panel-big-play-button');
+        if (button) {
+            return true;
+        }
 		else {
 			retries++;
 			const delayTime = getRandomDelay(400, 600);
 			await delay(delayTime);
 		}
-	}
-	console.log('Element not found after maximum retries.');
-	return false;
+    }
+    console.log('Element not found after maximum retries.');
+    return false;
 }
 
 // PREREQ ELEMENTS:
 // const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
 // const parent = document.querySelector('.top-menu-container');
 async function subtitleReplacer() {
-	const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
-	const clonedButton = subtitlesButton.cloneNode(true);
-	if (subtitlesButton && clonedButton) {
-		console.log('yay!');
-	}
-	try {
-		clonedButton.addEventListener('click', toggleSubtitles);
-		const parent = document.querySelector('.top-menu-container');
-		parent.insertBefore(clonedButton, subtitlesButton.nextSibling);
-		subtitlesButton.style.display = 'none';
-		console.log('Subtitles button replaced');
-	}
-	catch (e) {
-		console.log('Error replacing subtitles button:' + e);
-	}
+    const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
+    const clonedButton = subtitlesButton.cloneNode(true);
+    if (subtitlesButton && clonedButton) {
+        console.log('yay!');
+    }
+    try {
+        clonedButton.addEventListener('click', toggleSubtitles);
+        const parent = document.querySelector('.top-menu-container');
+        parent.insertBefore(clonedButton, subtitlesButton.nextSibling);
+        subtitlesButton.style.display = 'none';
+        console.log('Subtitles button replaced');
+    }
+    catch (e) {
+        console.log('Error replacing subtitles button:' + e);
+    }
 }
 
 function handleClick() {
-	// Handle the click event here
-	console.log('Document clicked!');
+    // Handle the click event here
+    console.log('Document clicked!');
 
-	// Remove the event listener after it has been triggered
-	document.removeEventListener('click', handleClick);
-	startVideo();
+    // Remove the event listener after it has been triggered
+    document.removeEventListener('click', handleClick);
+    startVideo();
   }
   
 
 async function startVideo() {
-	// Try to make sure player is fully loaded before this stuff?
+    // Try to make sure player is fully loaded before this stuff?
 	console.log('enjoy video! :)');
 	const delayTime = getRandomDelay(1500, 2000);
 	console.log(`Delaying ${delayTime}ms`);
 	await delay(delayTime);
 	await playButton();
-	// check if the play button wrapper still exists
-	const videoStarted = document.querySelector('.start-panel-click-overlay');
-	if (videoStarted !== null) {
-		console.log('Video did not start, exiting.');
-		// maybe make a backup click event with the rest of the functions here?
+    // check if the play button wrapper still exists
+    const videoStarted = document.querySelector('.start-panel-click-overlay');
+    if (videoStarted !== null) {
+        console.log('Video did not start, exiting.');
+        // maybe make a backup click event with the rest of the functions here?
 		document.addEventListener('click', handleClick);
-		return;
-	}
+        return;
+    }
 	// check if all prerequisite elements exist
 
 	// Create a new button element
 	await addNextButton();
-	await createPlaybackSpeedToggler();
-	console.log('Starting sub button')
+  	await createPlaybackSpeedToggler();
+    console.log('Starting sub button')
 	const delayTime2 = getRandomDelay(5000, 6200);
-	await delay(delayTime2);
-	subtitleReplacer();
+    await delay(delayTime2);
+    subtitleReplacer();
 }
 
 function isUserSignedIn() {
   const button = document.querySelector('.current-userprofile-anchor');
   if (button !== null) {
-	return true;
+    return true;
   }
   return false;
 }
@@ -263,10 +274,10 @@ async function createPlaybackSpeedToggler() {
   const buttonText = " | Speed";
   button.innerHTML = `<span style="font-weight: bold; color: white;">${buttonText}</span>`;
   function togglePlaybackSpeed() {
-	currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length;
+    currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length;
 	const currSpeed = playbackSpeeds[currentSpeedIndex];
-	videoPlayer.playbackRate = currSpeed;
-	console.log(`Playback speed changed to ${currSpeed}x`);
+    videoPlayer.playbackRate = currSpeed;
+    console.log(`Playback speed changed to ${currSpeed}x`);
 	let tempButtonText = "";
 	if (currSpeed !== 1) {
 		tempButtonText = ` | Speed: ${currSpeed}x`;
@@ -290,74 +301,73 @@ async function createPlaybackSpeedToggler() {
 // const offButton = document.getElementById('off-btn');
 // const englishButton = document.getElementById('english-btn');
 async function toggleSubtitles() {
-	// check if in subtitle panel, if not, click it
-	const menuPanel = document.querySelector('.audio-cc-panel-menu-section');
+    // check if in subtitle panel, if not, click it
+    const menuPanel = document.querySelector('.audio-cc-panel-menu-section');
 
-	if (menuPanel && menuPanel.classList.contains('show')) {
-	// The menu panel is active
-		console.log('Menu panel is active');
-	}
-	else {
-	// The menu panel is not active
-		console.log('Menu panel is not active');
-		const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
-		subtitlesButton.click();
-		await delay(300);
-	}
+    if (menuPanel && menuPanel.classList.contains('show')) {
+    // The menu panel is active
+        console.log('Menu panel is active');
+    } 
+    else {
+    // The menu panel is not active
+        console.log('Menu panel is not active');
+        const subtitlesButton = document.querySelector('.top-menu-btn.btn-audio-cc');
+        subtitlesButton.click();
+        await delay(300);
+    }
 
-	const closeButton = document.querySelector('.audio-cc-panel-btn-close');
-	const offButton = document.getElementById('off-btn');
+    const closeButton = document.querySelector('.audio-cc-panel-btn-close');
+    const offButton = document.getElementById('off-btn');
 	
-	let englishButton = document.getElementById('english-btn');
+    let englishButton = document.getElementById('english-btn');
 	if (englishButton === null) {
 		englishButton = document.getElementById('english-(u.s.)-btn');
 	}
 	
-	const offSelected = offButton.getAttribute('aria-selected') === 'true';
-	const englishSelected = englishButton.getAttribute('aria-selected') === 'true';
-	// check if they're the same
-	if (offSelected === true) {
-		console.log('Subtitles are off, toggling to English');
-		englishButton.click();
-	}
-	else if (englishSelected === true) {
-		console.log('Subtitles are English, toggling to Off');
-		offButton.click();
-	}
-	else {
-		console.log('Subtitles are neither Off or English, something is wrong');
-	}
-	const delayTime = getRandomDelay(300, 500);
-	await delay(delayTime);
+    const offSelected = offButton.getAttribute('aria-selected') === 'true';
+    const englishSelected = englishButton.getAttribute('aria-selected') === 'true';
+    // check if they're the same
+    if (offSelected === true) {
+        console.log('Subtitles are off, toggling to English');
+        englishButton.click();
+    }
+    else if (englishSelected === true) {
+        console.log('Subtitles are English, toggling to Off');
+        offButton.click();
+    }
+    else {
+        console.log('Subtitles are neither Off or English, something is wrong');
+    }
+    const delayTime = getRandomDelay(300, 500);
+    await delay(delayTime);
 
-	// console.log('Subtitles toggled to ' + (englishSelected ? 'English' : 'Off'));
-	closeButton.click();
+    // console.log('Subtitles toggled to ' + (englishSelected ? 'English' : 'Off'));
+    closeButton.click();
 }
 
 async function on_video_page() {
-	const foundVid = await checkPlayButtonExistenceWithRetries(6);
-	if (foundVid) {
-		startVideo();
-	}
-	else {
-		console.log('Video not found');
-		document.addEventListener('click', handleClick);
-		return;
-	}
+    const foundVid = await checkPlayButtonExistenceWithRetries(6);
+    if (foundVid) {
+        startVideo();
+    }
+    else {
+        console.log('Video not found');
+        document.addEventListener('click', handleClick);
+        return;
+    }
 }
 
-if (window.location.href.includes('https://www.paramountplus.com/shows/video/')) {
+if (window.location.href.includes(VALID_VIDEO_URL)) {
 	on_video_page();
 }
 
-else if (window.location.href.includes('https://www.paramountplus.com/shows/survivor/')) {
-  // should check if signed in, then load config
+else if (window.location.href.includes(VALID_SHOW_URL)) {
   if (isUserSignedIn()) {
-	console.log(`User is signed in! Setting survivor season ${selectedSeason}.`);
-	selectSeasonAndExpand();
-  }
+    console.log(`User is signed in! Setting season.`);
+    selectSeasonAndExpand();
+  } 
   else {
-	console.log('User is not signed in.');
+    console.log('User is not signed in.');
   }
 }
 else {

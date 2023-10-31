@@ -1,5 +1,12 @@
-// The season to select
-const selectedSeason = 16;
+// Adjust these for your preference!
+const CURRENT_SHOW = 'buddy-games'; // Must be the exact show name from the URL
+const CURRENT_SEASON = 1;
+
+// CONFIGURATION CONSTANTS
+const BASE_URL = 'https://www.paramountplus.com';
+const DEFAULT_SHOW = 'survivor';
+const VALID_SHOW_URL = `${BASE_URL}/shows/${CURRENT_SHOW?.length < 50 ? CURRENT_SHOW : DEFAULT_SHOW}`;
+const VALID_VIDEO_URL = `${BASE_URL}/shows/video`;
 
 function checkSeason() {
  // returns season like -> "Season 7"
@@ -22,6 +29,10 @@ function checkSeason() {
 function selectSeason() {
  const dropdown = document.getElementById('season_filterDD');
  // if default season does not match desired season, select season option
+ const default_season = '1'
+ // choose CURRENT_SEASON if that is a valid int > 0, otherwise choose 1
+ const selectedSeason = CURRENT_SEASON > 0 ? CURRENT_SEASON : default_season;
+
  if (checkSeason() === `Season ${selectedSeason}`) {
 	 console.log("correct season already selected.");
    return;
@@ -61,7 +72,7 @@ async function selectSeasonAndExpand() {
 	triggerShowMore();
 }
 // Find the main play button element
-async function clickPlayer(count) {
+async function clickPlayThrice(count) {
     if (count === 3) {
         console.log("I think it's done! Stop checking.");
         return null;
@@ -88,7 +99,7 @@ async function playButton() {
   let success;
   let count = 0
   for (let i = 0; i < 8; i++) {
-    success = await clickPlayer(count);
+    success = await clickPlayThrice(count);
     if (success === null) {
         console.log('Video started!');
         success = true;
@@ -346,14 +357,13 @@ async function on_video_page() {
     }
 }
 
-if (window.location.href.includes('https://www.paramountplus.com/shows/video/')) {
+if (window.location.href.includes(VALID_VIDEO_URL)) {
 	on_video_page();
 }
 
-else if (window.location.href.includes('https://www.paramountplus.com/shows/survivor/')) {
-  // should check if signed in, then load config
+else if (window.location.href.includes(VALID_SHOW_URL)) {
   if (isUserSignedIn()) {
-    console.log(`User is signed in! Setting survivor season ${selectedSeason}.`);
+    console.log(`User is signed in! Setting season.`);
     selectSeasonAndExpand();
   } 
   else {
