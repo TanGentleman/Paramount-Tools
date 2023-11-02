@@ -1,0 +1,19 @@
+{
+  "name": "paramount-tools",
+  "version": "1.0.0",
+  "description": "Suite of tools to enhance Paramount+",
+  "main": "stable_content.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TanGentleman/Paramount-Tools.git"
+  },
+  "author": "TanGentleman",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TanGentleman/Paramount-Tools/issues"
+  },
+  "homepage": "https://github.com/TanGentleman/Paramount-Tools#readme"
+}
