@@ -2,7 +2,7 @@
 /* eslint-disable no-await-in-loop */
 // Adjust these for your preference!
 const CURRENT_SHOW = 'survivor'; // Must be the exact show name from the URL
-const CURRENT_SEASON = 17;
+const CURRENT_SEASON = 19;
 
 // CONFIGURATION CONSTANTS
 const BASE_URL = 'https://www.paramountplus.com';
@@ -11,7 +11,7 @@ const VALID_SHOW_URL = `${BASE_URL}/shows/${
     CURRENT_SHOW?.length < 50 ? CURRENT_SHOW : DEFAULT_SHOW
 }`;
 const VALID_VIDEO_URL = `${BASE_URL}/shows/video`;
-
+const REPLACE_SUBS = true;
 // Generate a random delay between min and max (inclusive)
 function getRandomDelay(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
@@ -28,14 +28,17 @@ async function waitForElement(selector, maxRetries = 1, byID = false) {
     let retries = 0;
     while (retries < maxRetries) {
         const element = byID ? document.getElementById(selector) : document.querySelector(selector);
-        if (element) {
+        if (element !== null) {
             return element;
         }
         retries+=1;
         const delayTime = getRandomDelay(400, 600);
         await delay(delayTime);
     }
-    if (maxRetries > 1) console.log('Element not found after maximum retries.');
+    const elementText = String(selector).substring(0, 30);
+    if (maxRetries > 1) {
+        console.log(`Element ${elementText} not found after maximum retries.`);
+    }
     return null;
 }
 
@@ -45,10 +48,10 @@ async function triggerShowMore() {
     );
     if (showMoreButton) {
         showMoreButton.click();
+        return true;
     }
-    else {
-        console.log('Show More button not found');
-    }
+    console.log('Show More button not found');
+    return false;
 }
 
 async function checkSeason() {
@@ -87,13 +90,13 @@ async function selectSeason() {
         seasonButton.click();
         return seasonChoice;
     } 
-        console.log('Season option not found. Beep!');
-        return seasonChoice;
+    console.log('Season option not found. Beep!');
+    return seasonChoice;
     
 }
 
 async function selectSeasonAndExpand() {
-    const seasonNumber = selectSeason();
+    const seasonNumber = await selectSeason();
     if (seasonNumber > 10) {
         const delayTime = getRandomDelay(300, 500);
         await delay(delayTime);
@@ -102,27 +105,33 @@ async function selectSeasonAndExpand() {
     }
 }
 
-async function videoLoaded(checkDuplicate = false) {
-    const button = await waitForElement('.controls-bottom-btn');
-    // see if button is disabled
-    if (button) {
-        if (button.classList.contains('disabled')) {
-            console.log('Video is not loaded');
-            return false;
-        }
-        if (checkDuplicate) {
-            // check if speed button exists
-
-        }
+async function isScriptLoaded() {
+    // check to see if script has been injected
+    const nextButton = await waitForElement('#nextButton');
+    if (nextButton) {
         return true;
     }
     return false;
 }
 
-async function playButton() {
+async function videoLoaded() {
+    // check to see if script has been injected
+    const scriptIsLoaded = await isScriptLoaded();
+    if (scriptIsLoaded) {
+        console.log('Script already injected. Do you still need to press play?');
+        return true;
+    }
+    const playButtonInfo = await waitForElement('.start-panel-metadata-prompt');
+    // Video is loaded if the play button is not present
+    if (!playButtonInfo) {
+        return true;
+    }
+    return false;
+}
+
+async function pressPlayButton() {
     if (await videoLoaded()) {
         console.log('Video already loaded');
-        // DOUBLE CHECK WHAT HAPPENS HERE IF VIDEO IS ALREADY LOADED
         return true;
     }
     let count = 0;
@@ -135,14 +144,15 @@ async function playButton() {
         else {
             console.log('Play div panel not found');
         }
-        if (count >= 2) {
+        
+        const delayTime = getRandomDelay(600, 700);
+        await delay(delayTime);
+		if (count >= 2) {
             if (await videoLoaded()) {
                 console.log('Video loaded');
                 return true;
             }
         }
-        const delayTime = getRandomDelay(600, 700);
-        await delay(delayTime);
     }
     return false;
 }
@@ -244,6 +254,7 @@ async function playLastEpisode() {
 // const volumeButton = parentElement.querySelector('.controls-volume-slider');
 async function addNextButton() {
     const button = document.createElement('button');
+    button.id = 'nextButton';
     button.classList.add('controls-bottom-btn');
     button.innerHTML =
         '<span style="font-weight: bold; color: white;"> Next    |</span>';
@@ -255,6 +266,7 @@ async function addNextButton() {
 
 async function addPreviousButton() {
     const button = document.createElement('button');
+    button.id = 'previousButton';
     button.classList.add('controls-bottom-btn');
     button.innerHTML =
         '<span style="font-weight: bold; color: white;">|    Previous</span>';
@@ -277,13 +289,8 @@ async function createPlaybackSpeedToggler() {
         const currSpeed = playbackSpeeds[currentSpeedIndex];
         videoPlayer.playbackRate = currSpeed;
         console.log(`Playback speed changed to ${currSpeed}x`);
-        let tempButtonText = '';
-        if (currSpeed !== 1) {
-            tempButtonText = ` | Speed: ${currSpeed}x`;
-        }
-        else {
-            tempButtonText = ' | Speed';
-        }
+        // If speed is non-default, display the speed in the button
+        const tempButtonText = (currSpeed === 1) ? ' | Speed' : ` | Speed: ${currSpeed}x`;
         // Modify the innerHTML to include an inline style for positioning
         button.innerHTML = `<span style="font-weight: bold; color: white;">${tempButtonText}</span>`;
     }
@@ -329,11 +336,11 @@ async function toggleSubtitles() {
         console.log('Subtitles are off, toggling to English');
         englishButton.click();
     }
- else if (englishSelected === true) {
+    else if (englishSelected === true) {
         console.log('Subtitles are English, toggling to Off');
         offButton.click();
     }
- else {
+    else {
         console.log('Subtitles are neither Off or English, something is wrong');
     }
     const delayTime = getRandomDelay(300, 500);
@@ -362,41 +369,46 @@ async function subtitleReplacer() {
         console.log(`Error replacing subtitles button:${  e}`);
     }
 }
-function handleClick() {
+async function handleClick() {
     // Handle the click event here
     console.log('Document clicked!');
     // Remove the event listener after it has been triggered
     document.removeEventListener('click', handleClick);
+    if (await isScriptLoaded()) {
+        return;
+    }
+    // eslint-disable-next-line no-use-before-define
     startVideo();
 }
 async function startVideo() {
-    // Try to make sure player is fully loaded before this stuff?
+    if (await isScriptLoaded()) {
+        console.log('Script already injected! Not starting again.');
+        return;
+    }
     if (await videoLoaded()) {
-        console.log('Video already loaded');
-        return;
+        console.log('Video already loaded. Not attempting any clicks.');
     }
-    console.log('Beginning function startVideo!');
-    const vidStarted = await playButton();
-    if (!vidStarted) {
-        console.log('Video did not start, setting a handleClick function.');
-        // maybe make a backup click event with the rest of the functions here?
-        document.addEventListener('click', handleClick);
-        return;
+    else {
+        console.log('Video not loaded. Attempting to click play button.');
+        const success = await pressPlayButton();
+        if (!success) {
+            console.log('Video did not start, setting a handleClick function.');
+            // maybe make a backup click event with the rest of the functions here?
+            document.addEventListener('click', handleClick);
+            return;
+        }
     }
-
-    // check if all prerequisite elements exist
-
     // Create a new button element
     await addNextButton();
     await addPreviousButton();
     await createPlaybackSpeedToggler();
-    console.log('Starting sub button');
-    const delayTime2 = getRandomDelay(5000, 6200);
-    await delay(delayTime2);
-    subtitleReplacer();
+    if (REPLACE_SUBS) {
+        console.log('Starting sub button');
+        const delayTime2 = getRandomDelay(5000, 6200);
+        await delay(delayTime2);
+        subtitleReplacer();
+    }
 }
-
-
 
 function isUserSignedIn() {
     const button = document.querySelector('.current-userprofile-anchor');
@@ -407,7 +419,9 @@ function isUserSignedIn() {
 }
 
 async function onVideoPage() {
-    if (await videoLoaded()) {
+    // remove event listener
+    // document.removeEventListener('DOMContentLoaded', onVideoPage);
+    if (await isScriptLoaded()) {
         console.log('Video already loaded');
         return;
     }
@@ -425,6 +439,9 @@ async function onVideoPage() {
 }
 
 if (window.location.href.includes(VALID_VIDEO_URL)) {
+    // DOMContentLoaded listener addition
+    // add listener for DOMContentLoaded, make sure to remove it after it's triggered
+    // document.addEventListener('DOMContentLoaded', onVideoPage);
     onVideoPage();
 }
  else if (window.location.href.includes(VALID_SHOW_URL)) {

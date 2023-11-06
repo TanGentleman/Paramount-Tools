@@ -11,7 +11,7 @@ const VALID_SHOW_URL = `${BASE_URL}/shows/${
     CURRENT_SHOW?.length < 50 ? CURRENT_SHOW : DEFAULT_SHOW
 }`;
 const VALID_VIDEO_URL = `${BASE_URL}/shows/video`;
-
+const REPLACE_SUBS = true;
 // Generate a random delay between min and max (inclusive)
 function getRandomDelay(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
@@ -289,13 +289,8 @@ async function createPlaybackSpeedToggler() {
         const currSpeed = playbackSpeeds[currentSpeedIndex];
         videoPlayer.playbackRate = currSpeed;
         console.log(`Playback speed changed to ${currSpeed}x`);
-        let tempButtonText = '';
-        if (currSpeed !== 1) {
-            tempButtonText = ` | Speed: ${currSpeed}x`;
-        }
-        else {
-            tempButtonText = ' | Speed';
-        }
+        // If speed is non-default, display the speed in the button
+        const tempButtonText = (currSpeed === 1) ? ' | Speed' : ` | Speed: ${currSpeed}x`;
         // Modify the innerHTML to include an inline style for positioning
         button.innerHTML = `<span style="font-weight: bold; color: white;">${tempButtonText}</span>`;
     }
@@ -407,10 +402,12 @@ async function startVideo() {
     await addNextButton();
     await addPreviousButton();
     await createPlaybackSpeedToggler();
-    console.log('Starting sub button');
-    const delayTime2 = getRandomDelay(5000, 6200);
-    await delay(delayTime2);
-    subtitleReplacer();
+    if (REPLACE_SUBS) {
+        console.log('Starting sub button');
+        const delayTime2 = getRandomDelay(5000, 6200);
+        await delay(delayTime2);
+        subtitleReplacer();
+    }
 }
 
 function isUserSignedIn() {
